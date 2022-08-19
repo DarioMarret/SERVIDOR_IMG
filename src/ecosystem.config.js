@@ -11,7 +11,7 @@ module.exports = {
         PORT:"4000",
         BASIC_USER:"bm",
         BASIC_PASS:"bm",
-        DOMINIO:"https://imagenes.one.com.ec/img/"
+        DOMINIO:"http://planes.one.com.ec:4000/img/"
       },
       env_development: {
         NODE_ENV: "development"
