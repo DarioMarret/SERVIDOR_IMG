@@ -11,7 +11,7 @@ module.exports = {
         PORT:"4000",
         BASIC_USER:"bm",
         BASIC_PASS:"bm",
-        DOMINIO:"http://planes.one.com.ec:4000/img/"
+        DOMINIO:"https://codigomarret.online/store/img/"
       },
       env_development: {
         NODE_ENV: "development"
