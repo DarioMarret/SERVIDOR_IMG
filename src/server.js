@@ -1,8 +1,10 @@
+import fileUpload from 'express-fileupload'
 import express from 'express'
-import cors from 'cors'
 import morgan from 'morgan'
 import path from 'path'
-import fileUpload from 'express-fileupload'
+import cors from 'cors'
+import fs from 'fs'
+
 import './function/DeleteImagenDir'
 import 'dotenv/config'
 
