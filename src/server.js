@@ -35,7 +35,7 @@ app.post("/api/img",async(req, res)=>{
     try {
         let EDFile = req.files.image
         let name = EDFile.name.toLowerCase().replace(/ /g, "_")
-        let ruta_archivo = path.join(__dirname, '../storange/')
+        let ruta_archivo = path.join(__dirname, './public/img/')
         EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase()}`, async function (err) {
             if (err) return res.status(500).send({ message: err })
             return res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
@@ -47,7 +47,7 @@ app.post("/api/img",async(req, res)=>{
 })
 
 app.get("/api/get_image",(req, res)=>{
-    const RUTA_FOLDER = path.join(__dirname, '../storange/')
+    const RUTA_FOLDER = path.join(__dirname, './public/img/')
     fs.readdir(RUTA_FOLDER, function (err, archivos) {
         if (err) {
             console.log(err);
@@ -60,16 +60,6 @@ app.get("/api/get_image",(req, res)=>{
         }
     });
 })
-
-
-// const RUTA_FOLDER = './src/public/img'
-// fs.readdir(RUTA_FOLDER, function (err, archivos) {
-//     if (err) {
-//         console.log(err);
-//         return;
-//     }
-//     console.log(archivos);
-// });
 
 app.listen(port, () => {
     console.log(`Server on port ${port}`);
