@@ -51,6 +51,9 @@ app.get("/api/get_image",(req, res)=>{
             console.log(err);
             res.json({err})
         } else {
+            archivos = archivos.map((item)=>{
+                return `${process.env.DOMINIO}${item}`
+            })
             res.json({archivos})
         }
     });
