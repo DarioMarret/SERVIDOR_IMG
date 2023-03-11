@@ -36,7 +36,7 @@ app.post("/api/img",async(req, res)=>{
         let EDFile = req.files.image
         let name = EDFile.name.toLowerCase().replace(/ /g, "_")
         let ruta_archivo = path.join(__dirname, './public/img/')
-        EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase()}`, async function (err) {
+        EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase().replace(/ /g,"_")}`, async function (err) {
             if (err) return res.status(500).send({ message: err })
             return res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
         })
