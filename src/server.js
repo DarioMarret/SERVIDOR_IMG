@@ -34,7 +34,7 @@ app.use("/img", express.static(path.join(__dirname, './public/img')))
 app.post("/api/img",async(req, res)=>{
     try {
         let EDFile = req.files.image
-        let name = EDFile.name.toLowerCase().trim()
+        let name = EDFile.name.toLowerCase().replace(/ /g, "_")
         let ruta_archivo = path.join(__dirname, './public/img/')
         EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase()}`, async function (err) {
             if (err) return res.status(500).send({ message: err })
