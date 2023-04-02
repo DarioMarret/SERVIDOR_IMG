@@ -1,18 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <base href="/storange">
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <base href="/storange" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BM</title>
-</head>
-<body>
-  <center>API DE SERVICIOS STATICOS</center>
-  <div id="images">
+  </head>
+  <body>
+    <center>API DE SERVICIOS STATICOS</center>
+    <div id="images"></div>
+    <script>
+      var DivImage = document.getElementById("images");
 
-  </div>
-   <script src="./wha.js"></script>
-</body>
-    
+      window.addEventListener("load", () => {
+        fetch("https://api.t-ickets.com/storange/api/get_image")
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data.archivos);
+            data.archivos.forEach((item) => {
+              // if(true){
+              //     let domino = 'http://localhost:4000'+item.split('https://api.t-ickets.com/storange')[1]
+              //     DivImage.innerHTML += `
+              //             <img src="${domino}" alt="" width="250px">
+              //     `
+              // }
+              DivImage.innerHTML += `
+                <img src="${item}" alt="" width="250px">
+                `;
+            });
+          });
+      });
+    </script>
+  </body>
 </html>
