@@ -1,7 +1,7 @@
 var DivImage = document.getElementById('images')
 
 window.addEventListener('load', () => {
-    fetch('/api/get_image')
+    fetch('https://api.t-ickets.com/storange/api/get_image')
         .then(res => res.json())
         .then(data => {
             console.log(data.archivos)
