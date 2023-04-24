@@ -31,7 +31,7 @@ app.use(fileUpload({
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
 
-app.post("/api/img",async(req, res)=>{
+app.post("/api/img",(req, res)=>{
     try {
         let EDFile = req.files
         console.log("File", EDFile);
