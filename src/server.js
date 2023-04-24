@@ -5,8 +5,11 @@ import path from 'path'
 import cors from 'cors'
 import fs from 'fs'
 
+
 import './function/DeleteImagenDir'
 import 'dotenv/config'
+import {upload, storage } from './lib'
+const {multipartFileParser} = require('express-multipart-form-data-process');
 
 
 const app = express()
@@ -21,34 +24,29 @@ app.use(express.json({
     extended: true
 }));
 
-app.use(fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 },
-  }));
+
+// app.use(fileUpload({
+//     limits: { fileSize: 50 * 1024 * 1024 },
+//   }))
+app.use(multipartFileParser({
+    rawBodyOptions: {
+        limit: '50mb',
+    },
+}))
 
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
 
-app.post("/api/upload",(req, res)=>{
+app.post("/api/upload",upload.single("image") ,(req, res)=>{
     try {
-        let EDFile = req.files.image
-        console.log("File", EDFile);
-        let name = EDFile.name.toLowerCase().replace(/ /g, "_")
-        let ruta_archivo = path.join(__dirname, './public/img/')
-        EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase().replace(/ /g,"_")}`, async function (err) {
-            if (err) return res.status(500).send({ message: err })
-            return res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
-        })
+        const name = req.file.filename
+        res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
     } catch (error) {
         console.log(error);
         res.status(500).json({success: false, message: error})
     }
 })
 
-app.post("/api/upload_local",(req, res)=>{
-    let EDFile = req.files.image
-    console.log("File", EDFile)
-    res.json({success: true, message: 'File upload'})
-})
 
 app.get("/api/get_image",(req, res)=>{
     const RUTA_FOLDER = path.join(__dirname, './public/img/')
