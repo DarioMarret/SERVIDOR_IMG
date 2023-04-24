@@ -37,7 +37,7 @@ app.use(multipartFileParser({
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
 
-app.post("/api/upload",upload.single("image") ,(req, res)=>{
+app.post("/api/img",upload.single("image") ,(req, res)=>{
     try {
         const name = req.file.filename
         res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
