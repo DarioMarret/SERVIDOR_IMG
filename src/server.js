@@ -47,6 +47,12 @@ app.post("/api/upload",(req, res)=>{
     }
 })
 
+app.post("/api/upload_local",(req, res)=>{
+    let EDFile = req.files
+    console.log("File", EDFile)
+    res.json({success: true, message: 'File upload'})
+})
+
 app.get("/api/get_image",(req, res)=>{
     const RUTA_FOLDER = path.join(__dirname, './public/img/')
     fs.readdir(RUTA_FOLDER, function (err, archivos) {
