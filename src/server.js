@@ -21,20 +21,20 @@ app.use(express.json({
     extended: true
 }));
 
-// app.use()
-    // fileUpload({
-    // limits: { 
-    //     fileSize: 5000000,
-    //     fieldSize: 5242880
-    // },
-// })
+app.use(fileUpload({
+    limits: { 
+        fileSize: 5000000,
+        fieldSize: 5242880
+    },
+}))
 
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
 
 app.post("/api/img",async(req, res)=>{
     try {
-        let EDFile = req.files.image
+        let EDFile = req.files
+        console.log("File", EDFile);
         let name = EDFile.name.toLowerCase().replace(/ /g, "_")
         let ruta_archivo = path.join(__dirname, './public/img/')
         EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase().replace(/ /g,"_")}`, async function (err) {
