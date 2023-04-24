@@ -21,14 +21,13 @@ app.use(express.json({
     extended: true
 }));
 
-app.use(
+// app.use()
     // fileUpload({
     // limits: { 
     //     fileSize: 5000000,
     //     fieldSize: 5242880
     // },
 // })
-)
 
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
