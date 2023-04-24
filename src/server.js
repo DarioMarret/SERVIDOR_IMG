@@ -37,14 +37,15 @@ app.use(multipartFileParser({
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
 
-app.post("/api/img",upload.single("image") ,(req, res)=>{
-    try {
-        const name = req.file.filename
-        res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({success: false, message: error})
+app.post("/api/img",upload.single("image") ,(req, res, next)=>{
+    const file = req.file
+    if(!file){
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
     }
+    const name = req.file.filename
+    res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
 })
 
 
