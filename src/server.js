@@ -22,18 +22,15 @@ app.use(express.json({
 }));
 
 app.use(fileUpload({
-    limits: { 
-        fileSize: 5242880,
-        fieldSize: 5242880
-    },
-}))
+    limits: { fileSize: 50 * 1024 * 1024 },
+  }));
 
 app.use("/", express.static(path.join(__dirname, './public/')))
 app.use("/img", express.static(path.join(__dirname, './public/img')))
 
 app.post("/api/upload",(req, res)=>{
     try {
-        let EDFile = req.files
+        let EDFile = req.files.image
         console.log("File", EDFile);
         let name = EDFile.name.toLowerCase().replace(/ /g, "_")
         let ruta_archivo = path.join(__dirname, './public/img/')
@@ -48,7 +45,7 @@ app.post("/api/upload",(req, res)=>{
 })
 
 app.post("/api/upload_local",(req, res)=>{
-    let EDFile = req.files
+    let EDFile = req.files.image
     console.log("File", EDFile)
     res.json({success: true, message: 'File upload'})
 })
