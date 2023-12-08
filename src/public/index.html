@@ -9,7 +9,104 @@
 </head>
 <body>
   <center>API DE SERVICIOS STATICOS</center>
+
+  <div class="container">
+
+    <!-- crea una caja con input para subir imagenes -->
+    <div class="row">
+      <div class="col-sm">
+        <div class="card" style="width: 100%;">
+          <div class="card-body">
+            <div >
+              <div class="mb-3">
+                <label for="formFile" class="form-label">Subir imagen</label>
+                <input class="form-control" type="file" id="formFile" name="file">
+              </div>
+              <button type="submit" class="btn btn-primary" onclick="SubirImagen()">Subir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row contenedor-imagen">
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+
+      function SubirImagen(){
+        var url = "https://codigomarret.online/upload/api/img";
+        var data = new FormData();
+        data.append('image', document.querySelector("#formFile").files[0]);
+        fetch(url, {
+          method: 'POST',
+          body: data
+        }).then(res => res.json())
+        .catch(error => console.error('Error:', error))
+        .then(response => {
+          console.log(response);
+          ListarImagen();
+        })
+      }
+      function CopiarLink(link){
+        console.log(link);
+        var aux = document.createElement("input");
+        aux.setAttribute("value", link);
+        document.body.appendChild(aux);
+        aux.select();
+        document.execCommand("copy");
+        document.body.removeChild(aux);
+        alert("Link copiado");
+      }
+
+      function EliminarImagen(nombre){
+        console.log(nombre);
+        var url = "https://codigomarret.online/upload/api/delete_image?image_delete="+nombre+"";
+        let data = {
+          image_delete: nombre
+        }
+        fetch(url, {
+          method: 'DELETE',
+        }).then(res => res.json())
+        .catch(error => console.error('Error:', error))
+        .then(response => {
+          console.log(response);
+          ListarImagen();
+        })
+      }
+
+
+      function ListarImagen(){
+        var url = "https://codigomarret.online/upload/api/get_image";
+        fetch(url, {
+          method: 'GET',
+          headers:{
+            'Content-Type': 'application/json'
+          }
+        }).then(res => res.json())
+        .catch(error => console.error('Error:', error))
+        .then(response => {
+          console.log(response.archivos);
+          var html = "";
+          for(var i = 0; i < response.archivos.length; i++){
+            html += `<div class="col-sm mt-2">
+              <div class="card" style="width: 18rem; ">
+                <img src="https://codigomarret.online/upload/img/${response.archivos[i]}" class="card-img-top" alt="..." style="width: 100%; height: 200px; object-fit: cover;">
+                <div class="card-body text-center">
+                  <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" >Eliminar</a>
+                  <a href="#" class="btn btn-primary" onclick="CopiarLink('https://codigomarret.online/upload/img/${response.archivos[i]}')" >Copiar link</a>
+                </div>
+              </div>
+            </div>`;
+          }
+          document.querySelector(".contenedor-imagen").innerHTML = html;
+        })
+      }
+      ListarImagen();
+
+
+    </script>
+
 </body>
     
 </html>

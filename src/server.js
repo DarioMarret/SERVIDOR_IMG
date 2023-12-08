@@ -1,19 +1,24 @@
-import fileUpload from 'express-fileupload'
+import cors from 'cors'
 import express from 'express'
+import fileUpload from 'express-fileupload'
+import fs from 'fs'
 import morgan from 'morgan'
 import path from 'path'
-import cors from 'cors'
-import fs from 'fs'
 
-import './function/DeleteImagenDir'
+// import './function/DeleteImagenDir'
 import 'dotenv/config'
-
 
 const app = express()
 const port = process.env.PORT || 4000
 
 
-app.use(cors())
+app.use(cors(
+    {
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    }
+))
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(express.json({
@@ -34,9 +39,9 @@ app.use("/img", express.static(path.join(__dirname, './public/img')))
 app.post("/api/img",async(req, res)=>{
     try {
         let EDFile = req.files.image
-        let name = EDFile.name.toLowerCase().trim()
+        let name = EDFile.name.toLowerCase().replace(/ /g, "-")
         let ruta_archivo = path.join(__dirname, './public/img/')
-        EDFile.mv(`${ruta_archivo}${EDFile.name.toLowerCase()}`, async function (err) {
+        EDFile.mv(`${ruta_archivo}${name}`, async function (err) {
             if (err) return res.status(500).send({ message: err })
             return res.status(200).json({success: true, message: 'File upload' ,link:`${process.env.DOMINIO}${name}` ,file:name})
         })
@@ -54,6 +59,35 @@ app.get("/api/get_image",(req, res)=>{
             res.json({err})
         } else {
             res.json({archivos})
+        }
+    });
+})
+// eliminar imagen
+app.delete("/api/delete_image",(req, res)=>{
+    const image_delete = req.query.image_delete 
+    console.log(image_delete);
+    const RUTA_FOLDER = path.join(__dirname, './public/img/')
+    fs.readdir(RUTA_FOLDER, function (err, archivos) {
+        if (err) {
+            console.log(err);
+            return res.json({
+                success: false,
+                message: err
+            })
+        } 
+
+        let envio = false
+        archivos.forEach(element => {
+            if(element === image_delete){
+                console.log('imagen eliminada');
+                fs.unlinkSync(`${RUTA_FOLDER}${element}`)
+                envio = true
+            }
+        })
+        if(envio){
+            res.json({success: true, message: 'imagen eliminada'})
+        }else{
+            res.json({success: false, message: 'imagen no encontrada'})
         }
     });
 })
