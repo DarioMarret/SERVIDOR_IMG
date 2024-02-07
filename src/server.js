@@ -28,8 +28,8 @@ app.use(express.json({
 
 app.use(fileUpload({
     limits: { 
-        fileSize: 5000000,
-        fieldSize: 5242880
+        fileSize: 505500000,
+        fieldSize: 555242880
     },
 }))
 
