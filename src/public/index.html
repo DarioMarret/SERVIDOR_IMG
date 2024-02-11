@@ -89,15 +89,31 @@
           console.log(response.archivos);
           var html = "";
           for(var i = 0; i < response.archivos.length; i++){
-            html += `<div class="col-sm mt-2">
-              <div class="card" style="width: 18rem; ">
-                <img src="https://codigomarret.online/upload/img/${response.archivos[i]}" class="card-img-top" alt="..." style="width: 100%; height: 200px; object-fit: cover;">
-                <div class="card-body text-center">
-                  <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" >Eliminar</a>
-                  <a href="#" class="btn btn-primary" onclick="CopiarLink('https://codigomarret.online/upload/img/${response.archivos[i]}')" >Copiar link</a>
+            let link = "https://codigomarret.online/upload/img/"+response.archivos[i];
+            let extension = response.archivos[i].split('.').pop();
+            if(extension == "pdf" || extension == "doc" || extension == "docx" || extension == "xlsx" || extension == "xls"){
+              html += `<div class="col-sm mt-2">
+                <div class="card" style="width: 18rem; ">
+                  <iframe src="${link}" style="width: 100%; height: 200px; object-fit: cover;"></iframe>
+                  <div class="card-body text-center">
+                    <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
+                    <a href="#" class="btn btn-primary" onclick="EliminarImagen('${link}')" >Eliminar</a>
+                    <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" >Copiar link</a>
+                  </div>
                 </div>
-              </div>
-            </div>`;
+              </div>`;
+              continue;
+            }else{
+              html += `<div class="col-sm mt-2">
+                <div class="card" style="width: 18rem; ">
+                  <img src="${link}" class="card-img-top" alt="..." style="width: 100%; height: 200px; object-fit: cover;">
+                  <div class="card-body text-center">
+                    <a href="#" class="btn btn-primary" onclick="EliminarImagen('${link}')" >Eliminar</a>
+                    <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" >Copiar link</a>
+                  </div>
+                </div>
+              </div>`;
+            }
           }
           document.querySelector(".contenedor-imagen").innerHTML = html;
         })

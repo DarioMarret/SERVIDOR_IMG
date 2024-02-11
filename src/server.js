@@ -38,6 +38,7 @@ app.use("/img", express.static(path.join(__dirname, './public/img')))
 
 app.post("/api/img",async(req, res)=>{
     try {
+        // ver si es un documento doc, docx, pdf, xls, xlsx para guardar en la carpeta de documentos
         let EDFile = req.files.image
         let name = EDFile.name.toLowerCase().replace(/ /g, "-")
         let ruta_archivo = path.join(__dirname, './public/img/')
@@ -51,6 +52,7 @@ app.post("/api/img",async(req, res)=>{
     }
 })
 
+// servir imagenes, documentos, etc de hasta 100mb
 app.get("/api/get_image",(req, res)=>{
     const RUTA_FOLDER = path.join(__dirname, './public/img/')
     fs.readdir(RUTA_FOLDER, function (err, archivos) {
