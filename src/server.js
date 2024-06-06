@@ -52,6 +52,26 @@ app.post("/api/img",async(req, res)=>{
     }
 })
 
+// buscar imagenes por parametro search
+app.get("/api/search_image",(req, res)=>{
+    const search = req.query.search
+    const RUTA_FOLDER = path.join(__dirname, './public/img/')
+    fs.readdir(RUTA_FOLDER, function (err, archivos) {
+        if (err) {
+            console.log(err);
+            res.json({err})
+        } else {
+            let imagenes = []
+            archivos.forEach(element => {
+                if(element.includes(search)){
+                    imagenes.push(element)
+                }
+            });
+            res.json({imagenes})
+        }
+    });
+})
+
 // servir imagenes, documentos, etc de hasta 100mb
 app.get("/api/get_image",(req, res)=>{
     const RUTA_FOLDER = path.join(__dirname, './public/img/')
