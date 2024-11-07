@@ -40,7 +40,7 @@ app.post("/api/img",async(req, res)=>{
     try {
         // ver si es un documento doc, docx, pdf, xls, xlsx para guardar en la carpeta de documentos
         let EDFile = req.files.image
-        let name = EDFile.name.toLowerCase().replace(/ /g, "-")
+        let name = EDFile.name.toLowerCase().replace(/ /g, "_").replace(/[^a-z0-9_]/g, "").replace(/_+/g, "_")
         let ruta_archivo = path.join(__dirname, './public/img/')
         EDFile.mv(`${ruta_archivo}${name}`, async function (err) {
             if (err) return res.status(500).send({ message: err })

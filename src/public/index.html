@@ -129,20 +129,35 @@
       }
 
       function CopiarLink(link) {
-        console.log(link);
-        var aux = document.createElement("input");
-        aux.setAttribute("value", link);
-        document.body.appendChild(aux);
-        aux.select();
-        document.execCommand("copy");
-        document.body.removeChild(aux);
-        Swal.fire({
-          icon: 'success',
-          title: 'Link copiado',
-          showConfirmButton: false,
-          timer: 1500
-        })
-      }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            // Usa el portapapeles de la API moderna si está disponible
+            navigator.clipboard.writeText(link).then(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Link copiado',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }).catch(error => {
+                console.error('Error al copiar el enlace:', error);
+            });
+        } else {
+            // Método de respaldo para navegadores antiguos
+            var aux = document.createElement("input");
+            aux.setAttribute("value", link);
+            document.body.appendChild(aux);
+            aux.select();
+            document.execCommand("copy");
+            document.body.removeChild(aux);
+            Swal.fire({
+                icon: 'success',
+                title: 'Link copiado',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+    }
+    
 
       function DescargarArchivo(link) {
         //descargar archivo local
@@ -225,7 +240,9 @@
                 html += `<div class="col-sm mt-2">
                 <div class="card" style="width: 18rem; ">
                   <iframe src="${link}" style="width: 100%; height: 200px; object-fit: cover;"></iframe>
-                  <p class="card-text text-center">${response.archivos[i]}</p>
+                  <p class="card-text text-center"
+                    style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  >${response.archivos[i]}</p>
                   <div class="card-body text-center">
                     <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
                     <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -247,7 +264,9 @@
                 html += `<div class="col-sm mt-2">
               <div class="card" style="width: 18rem; ">
                 <video src="${link}" style="width: 100%; height: 200px; object-fit: cover;" controls></video>
-                <p class="card-text text-center">${response.archivos[i]}</p>
+                <p class="card-text text-center"
+                style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+              >${response.archivos[i]}</p>
                 <div class="card-body text-center">
                   <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
                   <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -270,7 +289,9 @@
                 html += `<div class="col-sm mt-2">
             <div class="card" style="width: 18rem; ">
               <audio src="${link}" style="width: 100%; height: 200px; object-fit: cover;" controls></audio>
-              <p class="card-text text-center">${response.archivos[i]}</p>
+              <p class="card-text text-center"
+              style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+            >${response.archivos[i]}</p>
               <div class="card-body text-center">
                 <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
                 <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -293,7 +314,9 @@
                 html += `<div class="col-sm mt-2">
                 <div class="card" style="width: 18rem; ">
                   <img src="${link}" class="card-img-top" alt="..." style="width: 100%; height: 200px; object-fit: cover;">
-                  <p class="card-text text-center">${response.archivos[i]}</p>
+                  <p class="card-text text-center"
+                    style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  >${response.archivos[i]}</p>
                   <div class="card-body text-center">
                     <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                       <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
