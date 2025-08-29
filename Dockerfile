@@ -1,22 +1,49 @@
-FROM node:alpine
+# Usa Node 20 (o 18) sobre Alpine
+FROM node:20-alpine AS build
 
 WORKDIR /upload
 
-COPY .babelrc ./
+# Paquetes necesarios para compilar dependencias nativas si es preciso
+# (sharp suele traer binarios precompilados, pero en Alpine a veces necesita g++)
+RUN apk add --no-cache \
+  libc6-compat \
+  python3 \
+  make \
+  g++ \
+  tzdata
 
+ENV TZ=America/Guayaquil
 
+# Copiamos solo package*.json primero para cachear npm ci
 COPY package*.json ./
+# Si usas npm 9+: ci asegura lockfile exacto
+RUN npm ci --omit=dev
 
+# Ahora copiamos el resto del código
 COPY . .
 
-RUN npm install
+# (Opcional) construyes si tienes build (TS/Vite/etc.)
+# RUN npm run build
 
-RUN apk add tzdata
+# -------- Runtime stage (más liviano) --------
+FROM node:20-alpine AS runtime
 
-ENV TZ 'America/Guayaquil' 
+WORKDIR /upload
 
-RUN cd /usr/share/zoneinfo && \ 
-    cp -f /usr/share/zoneinfo/$TZ /etc/localtime && \ 
-    echo $TZ > /etc/timezone
+RUN apk add --no-cache \
+  libc6-compat \
+  tzdata
 
+ENV TZ=America/Guayaquil \
+    NODE_ENV=production
+
+# Copiamos node_modules desde build
+COPY --from=build /upload/node_modules ./node_modules
+# Copiamos el código/estático
+COPY . .
+
+# Exponer puerto (cámbialo si usas otro)
+EXPOSE 4000
+
+# Usa npm start
 CMD ["npm", "start"]
