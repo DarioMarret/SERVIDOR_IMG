@@ -3,10 +3,9 @@ import 'dotenv/config';
 import express from 'express';
 import fileUpload from 'express-fileupload';
 import fs from 'fs';
-import mime from 'mime-types';
+import fsp from 'fs/promises'; // 👈 usa fs/promises
 import morgan from 'morgan';
 import path from 'path';
-import sharp from 'sharp';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -26,118 +25,88 @@ app.use(fileUpload({
   abortOnLimit: true
 }));
 
-// Estáticos con caché fuerte
+// Estáticos (puedes ajustar cache si lo deseas)
 app.use('/', express.static(PUBLIC_DIR));
 app.use('/img', express.static(IMG_DIR, {
   setHeaders: (res) => {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
   }
 }));
 
 // ====== helpers ======
-const DOMAIN = (process.env.DOMINIO || '').replace(/\/+$/, '') + '/img/';
-const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
-const IMAGE_EXTS  = new Set(['.jpg','.jpeg','.png','.webp','.gif','.avif','.jfif','.pjpeg','.pjp']);
+import crypto from "crypto";
+import {
+  SIZES, // 👈 lo usas para decidir variantes
+  baseNameAndExt,
+  ensureDir,
+  generateResponsiveVariants, // 👈 lo usas al responder
+  isImage,
+  publicUrlFor,
+  sanitizeName
+} from './lib/image-helpers.js';
 
-function sanitizeName(name) {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_.-]/g, '')
-    .replace(/_+/g, '_');
-}
+// PROTEGE con un token (ponlo en tu .env)
+const COMPRESS_TOKEN = process.env.COMPRESS_TOKEN || crypto.randomBytes(8).toString("hex");
 
-function uniqueName(base, ext) {
-  const ts = Date.now().toString(36);
-  const rnd = Math.random().toString(36).slice(2, 7);
-  return `${base}-${ts}-${rnd}${ext}`;
-}
-
-// Calidad adaptativa: archivos grandes => más compresión
-function qualityBySize(bytes) {
-  if (bytes > 8 * 1024 * 1024) return 65;
-  if (bytes > 4 * 1024 * 1024) return 72;
-  if (bytes > 1 * 1024 * 1024) return 80;
-  return 85;
+// genera nombre único si ya existe
+async function uniquePath(dir, filename) {
+  const { base, ext } = baseNameAndExt(filename);
+  let candidate = filename;
+  let i = 1;
+  while (true) {
+    try {
+      await fsp.access(path.join(dir, candidate));
+      // existe -> genera otra variante
+      candidate = `${base}-${i}${ext}`;
+      i++;
+    } catch {
+      // no existe -> usar este
+      return { file: candidate, base, ext };
+    }
+  }
 }
 
 // ====== subir y optimizar imagen ======
-app.post('/api/img', async (req, res) => {
+app.post("/api/img", async (req, res) => {
   try {
-    if (!req.files || !('file' in req.files)) {
-      return res.status(400).json({ success: false, message: 'No se subió ningún archivo' });
+    const f = req.files?.file || req.files?.image; // acepta "file" o "image"
+    if (!f) return res.status(400).json({ success: false, message: "No file" });
+
+    const ext = path.extname(f.name).toLowerCase();
+    const mimetype = f.mimetype;
+    await ensureDir(IMG_DIR);
+
+    // nombre saneado (conserva extensión original)
+    const clean = sanitizeName(f.name);
+    const { file: uniqueName } = await uniquePath(IMG_DIR, clean);
+    const { base, ext: origExt } = baseNameAndExt(uniqueName);
+    const destPath = path.join(IMG_DIR, `${base}${origExt}`);
+
+    // guardar SIEMPRE el original (misma extensión)
+    await fsp.writeFile(destPath, f.data);    // 👈 fs/promises
+
+    // si es imagen -> variantes responsive
+    let variants = [];
+    if (isImage(mimetype, ext)) {
+      await generateResponsiveVariants(f.data, IMG_DIR, base, origExt);
+      // armar urls
+      variants = SIZES.map(w => ({
+        w,
+        webp: publicUrlFor(`${base}-${w}w.webp`, process.env.DOMINIO, "/img"),
+        fallback: publicUrlFor(`${base}-${w}w${origExt}`, process.env.DOMINIO, "/img"),
+      }));
     }
-
-    const f = (req.files).file;
-    const mimeType = f.mimetype || mime.lookup(f.name) || '';
-    const ext = path.extname(f.name || '').toLowerCase();
-    const base = sanitizeName(path.basename(f.name, ext) || 'archivo');
-
-    // Asegura directorio
-    fs.mkdirSync(IMG_DIR, { recursive: true });
-
-    // Si NO es imagen, guardar tal cual
-    if (!IMAGE_MIMES.has(mimeType) && !IMAGE_EXTS.has(ext)) {
-      const rawName = uniqueName(base, ext || '');
-      const savePath = path.join(IMG_DIR, rawName);
-      await fs.promises.writeFile(savePath, f.data);
-      return res.json({
-        success: true,
-        message: 'Archivo subido (no imagen)',
-        link: DOMAIN + rawName,
-        file: rawName,
-        size: f.size
-      });
-    }
-
-    // Es imagen → optimizar con sharp
-    const maxDim = Number(process.env.IMG_MAX_DIM || 2560); // ancho/alto max
-    const q = qualityBySize(f.size);
-
-    // Config para PNG → WebP near-lossless; JPG → WebP con quality
-    const isPNG = mimeType.includes('png') || ext === '.png';
-    const webpOpts = isPNG
-      ? { quality: Math.min(95, q + 5), effort: 4, nearLossless: true }
-      : { quality: q, effort: 4 };
-
-    // Pipeline: rotar por EXIF, limitar píxeles, redimensionar si hace falta
-    const pipeline = sharp(f.data, { failOn: 'none', limitInputPixels: 268402689 /* ~16k x 16k */ })
-      .rotate()
-      .resize({
-        width: maxDim,
-        height: maxDim,
-        fit: 'inside',
-        withoutEnlargement: true
-      });
-
-    const webpBuffer = await pipeline.webp(webpOpts).toBuffer();
-
-    // Si por alguna razón el WebP es más grande que el original, guarda el original
-    let finalBuffer = webpBuffer;
-    let finalExt = '.webp';
-    if (webpBuffer.length >= f.size) {
-      finalBuffer = f.data; // conserva
-      finalExt = ext || '.' + (mime.extension(mimeType) || 'bin');
-    }
-
-    const finalName = uniqueName(base, finalExt);
-    const finalPath = path.join(IMG_DIR, finalName);
-    await fs.promises.writeFile(finalPath, finalBuffer);
 
     return res.json({
       success: true,
-      message: finalExt === '.webp'
-        ? 'Imagen optimizada y convertida a WebP'
-        : 'Imagen se mantuvo en el formato original (más eficiente)',
-      link: DOMAIN + finalName,
-      file: finalName,
-      bytes_in: f.size,
-      bytes_out: finalBuffer.length,
-      saved_pct: Number(((1 - finalBuffer.length / f.size) * 100).toFixed(2))
+      file: `${base}${origExt}`,
+      url: publicUrlFor(`${base}${origExt}`, process.env.DOMINIO, "/img"),
+      variants,
+      message: "Subida OK",
     });
-  } catch (err) {
-    console.error('Upload error:', err);
-    return res.status(500).json({ success: false, message: 'Error procesando el archivo' });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ success: false, message: "Upload error" });
   }
 });
 
@@ -158,22 +127,37 @@ app.get('/api/get_image', (_req, res) => {
   });
 });
 
-app.delete('/api/delete_image', (req, res) => {
-  const name = String(req.query.image_delete || '');
-  const filePath = path.join(IMG_DIR, path.basename(name));
-  fs.access(filePath, fs.constants.F_OK, (e) => {
-    if (e) return res.json({ success: false, message: 'imagen no encontrada' });
-    fs.unlink(filePath, (err) => {
-      if (err) return res.json({ success: false, message: 'no se pudo eliminar' });
-      res.json({ success: true, message: 'imagen eliminada' });
-    });
-  });
+// elimina archivo principal + variantes (-350w, -720w, ...)
+app.delete('/api/delete_image', async (req, res) => {
+  const raw = String(req.query.image_delete || '');
+  const safe = path.basename(raw); // sanitiza
+  if (!safe) return res.json({ success: false, message: 'nombre inválido' });
+
+  const { base, ext } = baseNameAndExt(safe);
+  let deletedAny = false;
+
+  try {
+    // principal
+    await fsp.unlink(path.join(IMG_DIR, safe));
+    deletedAny = true;
+  } catch {}
+
+  // variantes
+  for (const w of SIZES) {
+    for (const variant of [
+      `${base}-${w}w.webp`,
+      `${base}-${w}w${ext}`
+    ]) {
+      try {
+        await fsp.unlink(path.join(IMG_DIR, variant));
+        deletedAny = true;
+      } catch {}
+    }
+  }
+
+  if (deletedAny) return res.json({ success: true, message: 'imagen eliminada (incl. variantes)' });
+  return res.json({ success: false, message: 'imagen no encontrada' });
 });
-
-import crypto from "crypto";
-
-// PROTEGE con un token (ponlo en tu .env)
-const COMPRESS_TOKEN = process.env.COMPRESS_TOKEN || crypto.randomBytes(8).toString("hex");
 
 app.post("/api/compress_all", async (req, res) => {
   try {
@@ -182,9 +166,8 @@ app.post("/api/compress_all", async (req, res) => {
       return res.status(401).json({ ok: false, message: "Unauthorized" });
     }
 
-    const { default: run } = await import("./compress-existing.js");
-    // Si el script está como ESM ejecutable, en vez de importarlo, copia su lógica aquí
-    // o exporta una función desde ese archivo.
+    const { default: run } = await import("./compress-existing.js"); // asegúrate que exporte default
+    await run(); // 👈 si el módulo expone una función, ejecútala
 
     return res.json({ ok: true, message: "Compresión ejecutada (revisa logs del servidor)" });
   } catch (e) {
