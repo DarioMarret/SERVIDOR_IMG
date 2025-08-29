@@ -12,23 +12,21 @@
   <style>
     :root { --brand:#6C5CE7; }
     body { background:#0b1220; color:#e5e7eb; }
-    .card, .form-control, .btn { border-radius: 12px; }
-    .glass { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px);}
+    .card,.form-control,.btn { border-radius:12px; }
+    .glass{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); backdrop-filter:blur(6px); }
     .dropzone{ border:2px dashed rgba(255,255,255,.25); border-radius:16px; padding:28px; transition:.2s; }
-    .dropzone.dragover{ background:rgba(108,92,231,.12); border-color:var(--brand);}
-    .thumb{ aspect-ratio: 16/11; object-fit:cover; width:100%; border-radius:10px; }
+    .dropzone.dragover{ background:rgba(108,92,231,.12); border-color:var(--brand); }
+    .thumb{ aspect-ratio:16/11; object-fit:cover; width:100%; border-radius:10px; }
     .skeleton{ background:linear-gradient(90deg,#2a3346 25%,#36415a 37%,#2a3346 63%); background-size:400% 100%; animation:s 1.2s ease-in-out infinite; }
-    @keyframes s{ 0%{background-position:100% 50%} 100%{background-position:0 50%} }
+    @keyframes s{ 0%{ background-position:100% 50% } 100%{ background-position:0 50% } }
     .btn-icon{ width:38px; height:38px; display:flex; align-items:center; justify-content:center; }
-    .muted { color:#a3b1c6; }
-    .search-input{ background:#0f172a; border:1px solid #1f2937; color:#e5e7eb;}
-    .search-input:focus{ border-color:var(--brand); box-shadow:0 0 0 .25rem rgba(108,92,231,.25);}
-    a.link { color:#a3b1c6; text-decoration:none; }
-    a.link:hover { color:#fff; text-decoration:underline; }
+    .muted{ color:#a3b1c6; }
+    .search-input{ background:#0f172a; border:1px solid #1f2937; color:#e5e7eb; }
+    .search-input:focus{ border-color:var(--brand); box-shadow:0 0 0 .25rem rgba(108,92,231,.25); }
+    a.link{ color:#a3b1c6; text-decoration:none; } a.link:hover{ color:#fff; text-decoration:underline; }
   </style>
 </head>
 <body>
-
   <header class="container py-4">
     <div class="d-flex flex-wrap align-items-center gap-3 justify-content-between">
       <div class="d-flex align-items-center gap-3">
@@ -47,9 +45,7 @@
       <div class="row g-3">
         <div class="col-lg-7">
           <div id="dropzone" class="dropzone text-center">
-            <div class="mb-3">
-              <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color:var(--brand)"></i>
-            </div>
+            <div class="mb-3"><i class="fa-solid fa-cloud-arrow-up fa-2x" style="color:var(--brand)"></i></div>
             <div class="muted">Arrastra y suelta archivos aquí o</div>
             <div class="mt-2">
               <label class="btn btn-light btn-sm">
@@ -89,7 +85,7 @@
               <button class="btn btn-secondary btn-icon" data-copy title="Copiar"><i class="fa-regular fa-copy"></i></button>
               <button class="btn btn-success btn-icon" data-dl title="Descargar"><i class="fa-solid fa-arrow-down"></i></button>
               <button class="btn btn-info btn-icon" data-share title="Compartir"><i class="fa-solid fa-share-nodes"></i></button>
-              <!-- el botón Insertar (HTML) se añadirá solo para PDFs -->
+              <!-- Botón Insertar (HTML) se añade a PDFs en runtime -->
               <button class="btn btn-danger btn-icon ms-auto" data-del title="Eliminar"><i class="fa-solid fa-trash"></i></button>
             </div>
           </div>
@@ -100,45 +96,67 @@
 
   <script>
     // ====== Config ======
-    const BASE = "https://codigomarret.online/upload";  // <— cambia si hace falta
+    // PRODUCCIÓN:
+    // const BASE = "https://codigomarret.online/upload";
+    // DESARROLLO:
+    const BASE = "http://localhost:4000";
     const API  = BASE + "/api";
     const IMG  = BASE + "/img/";
 
-    // ====== Helpers ======
-    const $ = sel => document.querySelector(sel);
-    const grid = $("#grid");
-    const cardTpl = $("#cardTemplate");
-    const fileInput = $("#fileInput");
-    const drop = $("#dropzone");
-    const uploadList = $("#uploadList");
-    const searchInput = $("#searchInput");
-    const clearBtn = $("#clearBtn");
-
-    const isPreviewIframe = (ext) => ["pdf","doc","docx","xlsx","xls"].includes(ext);
-    const isVideo = (ext) => ["mp4","webm","mov","mkv","avi","flv"].includes(ext);
-    const isAudio = (ext) => ["mp3","wav","ogg","flac","m4a"].includes(ext);
+    // ====== Helpers UI ======
+    const $ = s => document.querySelector(s);
+    const grid = $("#grid"), cardTpl = $("#cardTemplate"),
+          fileInput = $("#fileInput"), drop = $("#dropzone"),
+          uploadList = $("#uploadList"), searchInput = $("#searchInput"),
+          clearBtn = $("#clearBtn");
 
     const notify = (opts) => Swal.fire({ toast:true, position:'top-end', timer:1800, showConfirmButton:false, ...opts });
 
-    // ========= NUEVO: copiar snippet de inserción para PDF =========
-    async function copyPdfEmbed(url){
+    // ====== Helpers URL/Cache ======
+    function joinUrl(base, name) {
+      const b = String(base || "").replace(/\/+$/, "");
+      const n = String(name || "").replace(/^\/+/, "");
+      return `${b}/${encodeURIComponent(n)}`;
+    }
+    function viewUrl(url) {
+      const sep = url.includes("?") ? "&" : "?";
+      return `${url}${sep}v=${Date.now()}`;
+    }
+
+    // ====== Tipo de archivo ======
+    function isPreviewIframe(ext){ return ["pdf","doc","docx","xls","xlsx"].includes((ext||"").toLowerCase()); }
+    function isVideo(ext){ return ["mp4","webm","ogg","mov","mkv","avi","flv"].includes((ext||"").toLowerCase()); }
+    function isAudio(ext){ return ["mp3","wav","ogg","m4a","flac"].includes((ext||"").toLowerCase()); }
+
+    // ====== Copiar snippet para PDF ======
+    async function copyPdfEmbed(pdfUrl){
       const html = `<div style="height:70vh;width:100%">
-  <object data="${url}#zoom=page-fit" type="application/pdf" width="100%" height="100%">
+  <object data="${pdfUrl}#zoom=page-fit" type="application/pdf" width="100%" height="100%">
     <p>No se pudo mostrar el PDF.
-      <a href="${url}" target="_blank" rel="noopener">Abrir / descargar</a>
+      <a href="${pdfUrl}" target="_blank" rel="noopener">Abrir / descargar</a>
     </p>
   </object>
 </div>`;
       await navigator.clipboard.writeText(html);
-      notify({icon:'success', title:'Código de inserción copiado'});
+      notify({ icon:'success', title:'Código de inserción copiado' });
     }
 
-    // ====== Render ======
-    function renderSkeleton(n=8){
+    // ====== Placeholders ======
+    function setBrokenThumb(imgEl, skelEl){
+      const ph = document.createElement("div");
+      ph.className = "d-flex align-items-center justify-content-center bg-secondary-subtle text-secondary-emphasis rounded-3";
+      ph.style.cssText = "width:100%;aspect-ratio:16/11;";
+      ph.innerHTML = '<i class="fa-regular fa-image fa-2xl"></i>';
+      skelEl?.replaceWith(ph);
+      imgEl?.remove();
+    }
+
+    // ====== Skeleton ======
+    function renderSkeleton(n = 8){
       grid.innerHTML = "";
       for(let i=0;i<n;i++){
         const col = document.createElement("div");
-        col.className="col-12 col-sm-6 col-lg-4 col-xxl-3";
+        col.className = "col-12 col-sm-6 col-lg-4 col-xxl-3";
         col.innerHTML = `<div class="card glass h-100 p-2">
           <div class="skeleton rounded-3" style="width:100%; aspect-ratio:16/11;"></div>
           <div class="p-2">
@@ -154,63 +172,67 @@
       }
     }
 
+    // ====== Card ======
     function cardFor(fileName){
       const ext = (fileName.split(".").pop() || "").toLowerCase();
-      const url = IMG + encodeURIComponent(fileName);
-      const node = cardTpl.content.firstElementChild.cloneNode(true);
-      const img = node.querySelector("img.thumb");
-      const sk  = node.querySelector(".skeleton");
-      const actions = node.querySelector("[data-actions]");
-      node.querySelector("[data-filename]").textContent = fileName;
-      node.querySelector("a").href = url;
+      const urlReal = joinUrl(IMG, fileName); // para abrir/copiar/descargar
+      const urlView = viewUrl(urlReal);       // para mostrar (evitar caché)
 
-      if(isPreviewIframe(ext)){
+      const node = cardTpl.content.firstElementChild.cloneNode(true);
+      const img  = node.querySelector("img.thumb");
+      const sk   = node.querySelector(".skeleton");
+      const actions = node.querySelector("[data-actions]");
+
+      node.querySelector("[data-filename]").textContent = fileName;
+      node.querySelector("a").href = urlReal;
+
+      if (isPreviewIframe(ext)){
         const iframe = document.createElement("iframe");
-        iframe.src = url;
+        iframe.src = urlView;
         iframe.className = "rounded-3";
-        iframe.style.cssText="width:100%;aspect-ratio:16/11;border:0;";
+        iframe.loading = "lazy";
+        iframe.referrerPolicy = "no-referrer";
+        iframe.style.cssText = "width:100%;aspect-ratio:16/11;border:0;";
         sk.replaceWith(iframe);
 
-        // === NUEVO: botón Insertar (HTML) para PDFs ===
-        if(ext === "pdf"){
+        if (ext === "pdf"){
           const btn = document.createElement("button");
           btn.className = "btn btn-warning btn-icon";
           btn.title = "Insertar (HTML)";
           btn.innerHTML = '<i class="fa-solid fa-code"></i>';
-          btn.onclick = () => copyPdfEmbed(url);
+          btn.onclick = () => copyPdfEmbed(urlReal);
           actions.insertBefore(btn, actions.querySelector("[data-del]"));
         }
-      } else if (isVideo(ext)) {
+      } else if (isVideo(ext)){
         const video = document.createElement("video");
-        video.src = url; video.controls = true; video.className="rounded-3";
-        video.style.cssText="width:100%;aspect-ratio:16/11;object-fit:cover;";
+        video.src = urlView; video.controls = true; video.className = "rounded-3";
+        video.style.cssText = "width:100%;aspect-ratio:16/11;object-fit:cover;";
         sk.replaceWith(video);
-      } else if (isAudio(ext)) {
+      } else if (isAudio(ext)){
         const audio = document.createElement("audio");
-        audio.src = url; audio.controls = true; audio.className="w-100";
+        audio.src = urlView; audio.controls = true; audio.className = "w-100";
         sk.replaceWith(audio);
       } else {
-        img.src = url;
-        img.onload = ()=> { sk.remove(); img.classList.remove("d-none"); };
+        img.crossOrigin = "anonymous";
+        img.referrerPolicy = "no-referrer";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.src = urlView;
+        img.onload = () => { sk.remove(); img.classList.remove("d-none"); };
+        img.onerror = () => setBrokenThumb(img, sk);
       }
 
-      node.querySelector("[data-copy]").onclick = async () => {
-        await navigator.clipboard.writeText(url);
-        notify({ icon:'success', title:'Enlace copiado' });
-      };
-      node.querySelector("[data-dl]").onclick = () => descargar(url);
-      node.querySelector("[data-share]").onclick = () => compartir(url, fileName);
-      node.querySelector("[data-del]").onclick = () => eliminar(fileName);
+      node.querySelector("[data-copy]").onclick  = async () => { await navigator.clipboard.writeText(urlReal); notify({icon:'success', title:'Enlace copiado'}); };
+      node.querySelector("[data-dl]").onclick    = () => descargar(urlReal);
+      node.querySelector("[data-share]").onclick = () => compartir(urlReal, fileName);
+      node.querySelector("[data-del]").onclick   = () => eliminar(fileName);
 
       return node;
     }
 
     function renderList(files){
       grid.innerHTML = "";
-      if(!files?.length){
-        grid.innerHTML = `<div class="text-center muted py-5">Sin resultados</div>`;
-        return;
-      }
+      if (!files?.length){ grid.innerHTML = `<div class="text-center muted py-5">Sin resultados</div>`; return; }
       const frag = document.createDocumentFragment();
       files.forEach(f => frag.appendChild(cardFor(f)));
       grid.appendChild(frag);
@@ -223,39 +245,28 @@
         const r = await fetch(API + "/get_image");
         const j = await r.json();
         renderList(j.archivos || []);
-      }catch(e){
-        console.error(e);
-        notify({icon:'error', title:'Error listando'});
-      }
+      }catch(e){ console.error(e); notify({icon:'error', title:'Error listando'}); }
     }
 
     let searchTimer;
     async function buscar(term){
-      if(!term) return listar();
+      if (!term) return listar();
       renderSkeleton(4);
       try{
         const r = await fetch(API + "/search_image?search=" + encodeURIComponent(term));
         const j = await r.json();
         renderList(j.imagenes || []);
-      }catch(e){
-        console.error(e);
-        notify({icon:'error', title:'Error buscando'});
-      }
+      }catch(e){ console.error(e); notify({icon:'error', title:'Error buscando'}); }
     }
 
     async function eliminar(name){
-      const ok = await Swal.fire({
-        title:'Eliminar archivo',
-        text:name,
-        icon:'warning', confirmButtonText:'Eliminar', showCancelButton:true,
-        confirmButtonColor:'#e11d48'
-      }).then(r=>r.isConfirmed);
-      if(!ok) return;
+      const ok = await Swal.fire({ title:'Eliminar archivo', text:name, icon:'warning', confirmButtonText:'Eliminar', showCancelButton:true, confirmButtonColor:'#e11d48' }).then(r => r.isConfirmed);
+      if (!ok) return;
       try{
         const r = await fetch(API + "/delete_image?image_delete=" + encodeURIComponent(name), { method:'DELETE' });
         const j = await r.json();
-        if(j.success){ notify({icon:'success', title:'Eliminado'}); listar(); }
-        else { notify({icon:'error', title:j.message || 'No se pudo eliminar'}); }
+        if (j.success){ notify({icon:'success', title:'Eliminado'}); listar(); }
+        else { notify({icon:'error', title: j.message || 'No se pudo eliminar'}); }
       }catch(e){ console.error(e); notify({icon:'error', title:'Error eliminando'}); }
     }
 
@@ -266,16 +277,12 @@
       a.href = URL.createObjectURL(blob);
       a.download = decodeURIComponent(url.split('/').pop());
       document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
 
     function compartir(url, name){
-      if(navigator.share){
-        navigator.share({ title:'Archivo', text:name, url }).catch(()=>{});
-      }else{
-        navigator.clipboard.writeText(url);
-        notify({icon:'success', title:'Enlace copiado'});
-      }
+      if (navigator.share){ navigator.share({ title:'Archivo', text:name, url }).catch(()=>{}); }
+      else { navigator.clipboard.writeText(url); notify({icon:'success', title:'Enlace copiado'}); }
     }
 
     // ====== Upload ======
@@ -287,65 +294,46 @@
           <div class="flex-grow-1 text-truncate small">${file.name}</div>
           <div class="small muted" data-perc>0%</div>
         </div>
-        <div class="progress mt-2" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-bar" style="width:0%"></div>
-        </div>`;
+        <div class="progress mt-2"><div class="progress-bar" style="width:0%"></div></div>`;
       uploadList.appendChild(row);
       return {
-        set(p){ row.querySelector('.progress-bar').style.width = p+'%'; row.querySelector('[data-perc]').textContent = p+'%'; },
+        set(p){ row.querySelector('.progress-bar').style.width = p + '%'; row.querySelector('[data-perc]').textContent = p + '%'; },
         done(){ row.remove(); }
       };
     }
 
     function uploadFiles(files){
-      [...files].forEach(file=>{
+      [...files].forEach(file => {
         const ui = renderUploadItem(file);
         const fd = new FormData();
         fd.append('file', file); // tu backend espera "file"
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', API + '/img');
-        xhr.upload.onprogress = (e)=>{
-          if(e.lengthComputable){
-            const p = Math.round((e.loaded/e.total)*100);
-            ui.set(p);
-          }
-        };
-        xhr.onload = ()=>{
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable){ ui.set(Math.round((e.loaded/e.total)*100)); } };
+        xhr.onload = () => {
           ui.done();
           try{
             const j = JSON.parse(xhr.responseText);
-            if(j.success){ notify({icon:'success', title:'Subido'}); listar(); }
+            if (j.success){ notify({icon:'success', title:'Subido'}); listar(); }
             else { notify({icon:'error', title: j.message || 'Error subiendo'}); }
           }catch{ notify({icon:'error', title:'Respuesta inválida'}); }
         };
-        xhr.onerror = ()=>{ ui.done(); notify({icon:'error', title:'Error de red'}); };
+        xhr.onerror = () => { ui.done(); notify({icon:'error', title:'Error de red'}); };
         xhr.send(fd);
       });
     }
 
     // ====== Events ======
-    fileInput.addEventListener('change', e => {
-      if(e.target.files?.length) uploadFiles(e.target.files);
-      fileInput.value = '';
-    });
-
+    fileInput.addEventListener('change', e => { if (e.target.files?.length) uploadFiles(e.target.files); fileInput.value=''; });
     drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
-    drop.addEventListener('drop', e => {
-      e.preventDefault(); drop.classList.remove('dragover');
-      if(e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
-    });
+    drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files); });
 
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(()=>buscar(searchInput.value.trim()), 350);
-    });
-    clearBtn.addEventListener('click', () => {
-      searchInput.value = ''; listar();
-    });
+    searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => buscar(searchInput.value.trim()), 350); });
+    clearBtn.addEventListener('click', () => { searchInput.value=''; listar(); });
 
-    // ====== init ======
+    // init
     listar();
   </script>
 

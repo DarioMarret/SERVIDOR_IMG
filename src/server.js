@@ -101,7 +101,7 @@ app.post('/api/img', async (req, res) => {
       : { quality: q, effort: 4 };
 
     // Pipeline: rotar por EXIF, limitar píxeles, redimensionar si hace falta
-    const pipeline = sharp(f.data, { failOn: false, limitInputPixels: 268402689 /* ~16k x 16k */ })
+    const pipeline = sharp(f.data, { failOn: 'none', limitInputPixels: 268402689 /* ~16k x 16k */ })
       .rotate()
       .resize({
         width: maxDim,
