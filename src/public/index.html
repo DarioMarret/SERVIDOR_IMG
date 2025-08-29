@@ -24,6 +24,16 @@
     .search-input{ background:#0f172a; border:1px solid #1f2937; color:#e5e7eb; }
     .search-input:focus{ border-color:var(--brand); box-shadow:0 0 0 .25rem rgba(108,92,231,.25); }
     a.link{ color:#a3b1c6; text-decoration:none; } a.link:hover{ color:#fff; text-decoration:underline; }
+    .filename {
+  margin-top: .35rem;
+  font-size: .86rem;
+  color: #cbd5e1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;     /* hasta 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;     /* permite romper palabras largas */
+}
   </style>
 </head>
 <body>
@@ -79,7 +89,7 @@
           <div class="skeleton rounded-3" style="width:100%; aspect-ratio:16/11;"></div>
           <img class="thumb d-none" loading="lazy" />
           <div class="p-2">
-            <div class="small text-truncate" data-filename></div>
+            <div class="filename" data-filename></div>
             <div class="d-flex gap-2 mt-2" data-actions>
               <a class="btn btn-light btn-icon" target="_blank" title="Ver"><i class="fa-regular fa-eye"></i></a>
               <button class="btn btn-secondary btn-icon" data-copy title="Copiar"><i class="fa-regular fa-copy"></i></button>
