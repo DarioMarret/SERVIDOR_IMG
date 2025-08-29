@@ -170,6 +170,29 @@ app.delete('/api/delete_image', (req, res) => {
   });
 });
 
+import crypto from "crypto";
+
+// PROTEGE con un token (ponlo en tu .env)
+const COMPRESS_TOKEN = process.env.COMPRESS_TOKEN || crypto.randomBytes(8).toString("hex");
+
+app.post("/api/compress_all", async (req, res) => {
+  try {
+    const token = req.headers["x-compress-token"] || req.query.token;
+    if (String(token) !== String(COMPRESS_TOKEN)) {
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+    }
+
+    const { default: run } = await import("./compress-existing.js");
+    // Si el script está como ESM ejecutable, en vez de importarlo, copia su lógica aquí
+    // o exporta una función desde ese archivo.
+
+    return res.json({ ok: true, message: "Compresión ejecutada (revisa logs del servidor)" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false, message: "Error ejecutando compresión" });
+  }
+});
+
 // ====== start ======
 app.listen(port, () => {
   console.log(`Server listening on :${port}`);
