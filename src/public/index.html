@@ -1,355 +1,354 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BMCodigomarret</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestor de archivos · BMCodigoMarret</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+  <style>
+    :root { --brand:#6C5CE7; }
+    body { background:#0b1220; color:#e5e7eb; }
+    .card, .form-control, .btn { border-radius: 12px; }
+    .glass { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px);}
+    .dropzone{ border:2px dashed rgba(255,255,255,.25); border-radius:16px; padding:28px; transition:.2s; }
+    .dropzone.dragover{ background:rgba(108,92,231,.12); border-color:var(--brand);}
+    .thumb{ aspect-ratio: 16/11; object-fit:cover; width:100%; border-radius:10px; }
+    .skeleton{ background:linear-gradient(90deg,#2a3346 25%,#36415a 37%,#2a3346 63%); background-size:400% 100%; animation:s 1.2s ease-in-out infinite; }
+    @keyframes s{ 0%{background-position:100% 50%} 100%{background-position:0 50%} }
+    .btn-icon{ width:38px; height:38px; display:flex; align-items:center; justify-content:center; }
+    .muted { color:#a3b1c6; }
+    .search-input{ background:#0f172a; border:1px solid #1f2937; color:#e5e7eb;}
+    .search-input:focus{ border-color:var(--brand); box-shadow:0 0 0 .25rem rgba(108,92,231,.25);}
+    a.link { color:#a3b1c6; text-decoration:none; }
+    a.link:hover { color:#fff; text-decoration:underline; }
+  </style>
 </head>
-
 <body>
-  <center>API DE SERVICIOS STATICOS</center>
 
-  <div class="container">
+  <header class="container py-4">
+    <div class="d-flex flex-wrap align-items-center gap-3 justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <img src="https://codigomarret.online/upload/img/loog-bm-morado-solo-fondo-blanco.png" alt="logo" width="40" height="40" class="rounded-circle">
+        <div>
+          <h1 class="h5 m-0">Gestor de archivos</h1>
+          <div class="muted small">Sube imágenes/documentos, copia enlaces y comparte</div>
+        </div>
+      </div>
+      <a class="link small" href="https://codigomarret.com" target="_blank">by BMCodigoMarret</a>
+    </div>
+  </header>
 
-    <!-- crea una caja con input para subir imagenes -->
-    <div class="row">
-      <div class="col-sm">
-        <div class="card" style="width: 100%;">
-          <div class="card-body">
-            <div class="row">
-              <!-- el input para subir imagenes -->
-              <div class="col-lg-6 col-sm-12 mb-3">
-                <div class="mb-3">
-                  <label for="formFile" class="form-label">Subir imagen</label>
-                  <input class="form-control" type="file" id="formFile" name="file">
-                </div>
-                <button type="submit" class="btn btn-primary" onclick="SubirImagen()">Subir</button>
-              </div>
-              <!-- el buscador  -->
-              <div class="col-lg-6 col-sm-12 mb-3">
-                <label for="search" class="form-label">Buscar imagen</label>
-                <input type="text" class="form-control" id="search" name="search"
-                  placeholder="Ingrese el nombre de la imagen"
-                  onchange="BuscarImageNombre(document.querySelector('#search').value)">
-              </div>
+  <main class="container pb-5">
+    <div class="glass p-3 p-md-4 mb-4">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div id="dropzone" class="dropzone text-center">
+            <div class="mb-3">
+              <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color:var(--brand)"></i>
             </div>
+            <div class="muted">Arrastra y suelta archivos aquí o</div>
+            <div class="mt-2">
+              <label class="btn btn-light btn-sm">
+                <input id="fileInput" type="file" class="d-none" multiple>
+                Elegir archivos
+              </label>
+            </div>
+            <div class="small muted mt-2">Imágenes se optimizan a WebP en el servidor.</div>
           </div>
+          <div id="uploadList" class="mt-3"></div>
+        </div>
 
+        <div class="col-lg-5">
+          <label class="form-label">Buscar</label>
+          <div class="d-flex gap-2">
+            <input id="searchInput" type="search" class="form-control search-input" placeholder="Escribe para buscar…">
+            <button id="clearBtn" class="btn btn-outline-light btn-icon" title="Limpiar">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="small muted mt-2">Coincide por nombre de archivo</div>
         </div>
       </div>
     </div>
 
-    <div class="row contenedor-imagen">
-    </div>
+    <div id="grid" class="row g-3"></div>
 
-
-    <script type="text/javascript">
-      var images = [];
-      function BuscarImageNombre(searche) {
-        var url = "https://codigomarret.online/upload/api/search_image?search=" + searche;
-        fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }).then(res => res.json())
-          .catch(error => console.error('Error:', error))
-          .then(response => {
-            var html = "";
-            for (var i = 0; i < response.imagenes.length; i++) {
-              let link = "https://codigomarret.online/upload/img/" + response.imagenes[i];
-              let extension = response.imagenes[i].split('.').pop();
-              if (extension == "pdf" || extension == "doc" || extension == "docx" || extension == "xlsx" || extension == "xls") {
-                html += `<div class="col-sm mt-2">
-                    <div class="card" style="width: 18rem; ">
-                      <iframe src="${link}" style="width: 100%; height: 200px; object-fit: cover;"></iframe>
-                      <!-- nombre del archivo -->
-                      <p class="card-text text-center">${response.imagenes[i]}</p>
-                      <div class="card-body text-center">
-                        <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
-                        <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.imagenes[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                          <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                        </svg></a>
-                        <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
-                        </svg></a>
-                        <a href="#" class="btn btn-primary" onclick="DescargarArchivo('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-down" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-                          <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-                        </svg></i></a>
-                      </div>
-                    </div>
-                  </div>`;
-                continue;
-              } else {
-                html += `<div class="col-sm mt-2">
-                  <div class="card" style="width: 18rem; ">
-                    <img src="${link}" class="card-img-top" alt="..." style="width: 100%; height: 200px; object-fit: cover;">
-                    <p class="card-text text-center">${response.imagenes[i]}</p>
-                    <div class="card-body text-center">
-                      <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.imagenes[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                        <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                      </svg></a>
-                      <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
-                      </svg></a>
-                        <a href="#" class="btn btn-primary" onclick="DescargarArchivo('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-down" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-                        <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-                      </svg></i></a>
-                    </div>
-                  </div>
-                </div>`;
-              }
-            }
-            document.querySelector(".contenedor-imagen").innerHTML = html;
-          })
-      }
-
-      function SubirImagen() {
-        var url = "https://codigomarret.online/upload/api/img";
-        var data = new FormData();
-        data.append('image', document.querySelector("#formFile").files[0]);
-        fetch(url, {
-          method: 'POST',
-          body: data
-        }).then(res => res.json())
-          .catch(error => console.error('Error:', error))
-          .then(response => {
-            console.log(response);
-            ListarImagen();
-          })
-      }
-
-      function CopiarLink(link) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            // Usa el portapapeles de la API moderna si está disponible
-            navigator.clipboard.writeText(link).then(() => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Link copiado',
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-            }).catch(error => {
-                console.error('Error al copiar el enlace:', error);
-            });
-        } else {
-            // Método de respaldo para navegadores antiguos
-            var aux = document.createElement("input");
-            aux.setAttribute("value", link);
-            document.body.appendChild(aux);
-            aux.select();
-            document.execCommand("copy");
-            document.body.removeChild(aux);
-            Swal.fire({
-                icon: 'success',
-                title: 'Link copiado',
-                showConfirmButton: false,
-                timer: 1500
-            });
-        }
-    }
-    
-
-      function DescargarArchivo(link) {
-        //descargar archivo local
-        fetch(link, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'arraybuffer'
-          }
-        }).then(res => res.blob())
-          .then(blob => {
-            const url = window.URL.createObjectURL(new Blob([blob]));
-            const linkElement = document.createElement('a');
-            linkElement.href = url;
-            linkElement.setAttribute('download', link.split('/').pop());
-            document.body.appendChild(linkElement);
-            linkElement.click();
-            linkElement.remove();
-          });
-      }
-
-      function EliminarImagen(nombre) {
-        console.log(nombre);
-        // Solicita el código de confirmación al usuario
-        Swal.fire({
-            title: 'Confirma tu acción',
-            input: 'text',
-            inputLabel: 'Introduce el código de confirmación',
-            inputPlaceholder: 'Código de confirmación',
-            showCancelButton: true,
-            confirmButtonText: 'Eliminar',
-            cancelButtonText: 'Cancelar',
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'Por favor, introduce un código de confirmación';
-                }
-                // Aquí puedes poner un valor específico si tienes un código predefinido
-                const expectedCode = 'BMCodigo.com'; // Ejemplo de código
-                if (value !== expectedCode) {
-                    return 'Código incorrecto';
-                }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Si el código es correcto y el usuario confirma, procede a eliminar la imagen
-                var url = "https://codigomarret.online/upload/api/delete_image?image_delete=" + nombre;
-                fetch(url, {
-                    method: 'DELETE',
-                }).then(res => res.json())
-                  .catch(error => console.error('Error:', error))
-                  .then(response => {
-                    console.log(response);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Se ha eliminado con éxito',
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                    ListarImagen();
-                  });
-            }
-        });
-    }
-    
-
-      function ListarImagen() {
-        var url = "https://codigomarret.online/upload/api/get_image";
-        fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }).then(res => res.json())
-          .catch(error => console.error('Error:', error))
-          .then(response => {
-            var html = "";
-            for (var i = 0; i < response.archivos.length; i++) {
-              let link = "https://codigomarret.online/upload/img/" + response.archivos[i];
-              let extension = response.archivos[i].split('.').pop();
-              if (extension == "pdf" || extension == "doc" || extension == "docx" || extension == "xlsx" || extension == "xls") {
-                html += `<div class="col-sm mt-2">
-                <div class="card" style="width: 18rem; ">
-                  <iframe src="${link}" style="width: 100%; height: 200px; object-fit: cover;"></iframe>
-                  <p class="card-text text-center"
-                    style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                  >${response.archivos[i]}</p>
-                  <div class="card-body text-center">
-                    <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
-                    <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                      <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                      <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                    </svg></a>
-                    <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
-</svg></a>
-                    <a href="#" class="btn btn-primary" onclick="DescargarArchivo('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-down" viewBox="0 0 16 16">
-  <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-  <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-</svg></i></a>
-                  </div>
-                </div>
-              </div>`;
-                continue;
-              } else if (extension == "mp4" || extension == "avi" || extension == "mkv" || extension == "mov" || extension == "flv") {
-                html += `<div class="col-sm mt-2">
-              <div class="card" style="width: 18rem; ">
-                <video src="${link}" style="width: 100%; height: 200px; object-fit: cover;" controls></video>
-                <p class="card-text text-center"
-                style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-              >${response.archivos[i]}</p>
-                <div class="card-body text-center">
-                  <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
-                  <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0
-                    1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                  </svg></a>
-                  <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
-                  </svg></a>
-                  <a href="#" class="btn btn-primary" onclick="DescargarArchivo('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-down" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-                    <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-                  </svg></i></a>
-                </div>
-              </div>
-            </div>`;
-                continue;
-              } else if (extension == "mp3" || extension == "wav" || extension == "ogg" || extension == "flac" || extension == "m4a") {
-                html += `<div class="col-sm mt-2">
-            <div class="card" style="width: 18rem; ">
-              <audio src="${link}" style="width: 100%; height: 200px; object-fit: cover;" controls></audio>
-              <p class="card-text text-center"
-              style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-            >${response.archivos[i]}</p>
-              <div class="card-body text-center">
-                <a href="${link}" class="btn btn-primary" target="_blank" >Ver</a>
-                <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                  <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                </svg></a>
-                <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
-                </svg></a>
-                <a href="#" class="btn btn-primary" onclick="DescargarArchivo('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-down" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-                  <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-                </svg></i></a>
-              </div>
+    <template id="cardTemplate">
+      <div class="col-12 col-sm-6 col-lg-4 col-xxl-3">
+        <div class="card glass h-100 p-2">
+          <div class="skeleton rounded-3" style="width:100%; aspect-ratio:16/11;"></div>
+          <img class="thumb d-none" loading="lazy" />
+          <div class="p-2">
+            <div class="small text-truncate" data-filename></div>
+            <div class="d-flex gap-2 mt-2" data-actions>
+              <a class="btn btn-light btn-icon" target="_blank" title="Ver"><i class="fa-regular fa-eye"></i></a>
+              <button class="btn btn-secondary btn-icon" data-copy title="Copiar"><i class="fa-regular fa-copy"></i></button>
+              <button class="btn btn-success btn-icon" data-dl title="Descargar"><i class="fa-solid fa-arrow-down"></i></button>
+              <button class="btn btn-info btn-icon" data-share title="Compartir"><i class="fa-solid fa-share-nodes"></i></button>
+              <!-- el botón Insertar (HTML) se añadirá solo para PDFs -->
+              <button class="btn btn-danger btn-icon ms-auto" data-del title="Eliminar"><i class="fa-solid fa-trash"></i></button>
             </div>
-          </div>`;
-                continue;
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
 
-              } else {
-                html += `<div class="col-sm mt-2">
-                <div class="card" style="width: 18rem; ">
-                  <img src="${link}" class="card-img-top" alt="..." style="width: 100%; height: 200px; object-fit: cover;">
-                  <p class="card-text text-center"
-                    style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                  >${response.archivos[i]}</p>
-                  <div class="card-body text-center">
-                    <a href="#" class="btn btn-primary" onclick="EliminarImagen('${response.archivos[i]}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                      <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                      <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                    </svg></a>
-                    <a href="#" class="btn btn-primary" onclick="CopiarLink('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
-</svg></a>
-                    <a href="#" class="btn btn-primary" onclick="DescargarArchivo('${link}')" ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-down" viewBox="0 0 16 16">
-  <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-  <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-</svg></i></a>
-                  </div>
-                </div>
-              </div>`;
-              }
-            }
-            document.querySelector(".contenedor-imagen").innerHTML = html;
-          })
+  <script>
+    // ====== Config ======
+    const BASE = "https://codigomarret.online/upload";  // <— cambia si hace falta
+    const API  = BASE + "/api";
+    const IMG  = BASE + "/img/";
+
+    // ====== Helpers ======
+    const $ = sel => document.querySelector(sel);
+    const grid = $("#grid");
+    const cardTpl = $("#cardTemplate");
+    const fileInput = $("#fileInput");
+    const drop = $("#dropzone");
+    const uploadList = $("#uploadList");
+    const searchInput = $("#searchInput");
+    const clearBtn = $("#clearBtn");
+
+    const isPreviewIframe = (ext) => ["pdf","doc","docx","xlsx","xls"].includes(ext);
+    const isVideo = (ext) => ["mp4","webm","mov","mkv","avi","flv"].includes(ext);
+    const isAudio = (ext) => ["mp3","wav","ogg","flac","m4a"].includes(ext);
+
+    const notify = (opts) => Swal.fire({ toast:true, position:'top-end', timer:1800, showConfirmButton:false, ...opts });
+
+    // ========= NUEVO: copiar snippet de inserción para PDF =========
+    async function copyPdfEmbed(url){
+      const html = `<div style="height:70vh;width:100%">
+  <object data="${url}#zoom=page-fit" type="application/pdf" width="100%" height="100%">
+    <p>No se pudo mostrar el PDF.
+      <a href="${url}" target="_blank" rel="noopener">Abrir / descargar</a>
+    </p>
+  </object>
+</div>`;
+      await navigator.clipboard.writeText(html);
+      notify({icon:'success', title:'Código de inserción copiado'});
+    }
+
+    // ====== Render ======
+    function renderSkeleton(n=8){
+      grid.innerHTML = "";
+      for(let i=0;i<n;i++){
+        const col = document.createElement("div");
+        col.className="col-12 col-sm-6 col-lg-4 col-xxl-3";
+        col.innerHTML = `<div class="card glass h-100 p-2">
+          <div class="skeleton rounded-3" style="width:100%; aspect-ratio:16/11;"></div>
+          <div class="p-2">
+            <div class="skeleton rounded-2" style="height:14px;width:70%"></div>
+            <div class="d-flex gap-2 mt-2">
+              <div class="skeleton rounded-2" style="height:38px;width:38px"></div>
+              <div class="skeleton rounded-2" style="height:38px;width:38px"></div>
+              <div class="skeleton rounded-2" style="height:38px;width:38px"></div>
+            </div>
+          </div>
+        </div>`;
+        grid.appendChild(col);
       }
-      ListarImagen();
+    }
 
+    function cardFor(fileName){
+      const ext = (fileName.split(".").pop() || "").toLowerCase();
+      const url = IMG + encodeURIComponent(fileName);
+      const node = cardTpl.content.firstElementChild.cloneNode(true);
+      const img = node.querySelector("img.thumb");
+      const sk  = node.querySelector(".skeleton");
+      const actions = node.querySelector("[data-actions]");
+      node.querySelector("[data-filename]").textContent = fileName;
+      node.querySelector("a").href = url;
 
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-      crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
-      integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
-      crossorigin="anonymous"></script>
+      if(isPreviewIframe(ext)){
+        const iframe = document.createElement("iframe");
+        iframe.src = url;
+        iframe.className = "rounded-3";
+        iframe.style.cssText="width:100%;aspect-ratio:16/11;border:0;";
+        sk.replaceWith(iframe);
+
+        // === NUEVO: botón Insertar (HTML) para PDFs ===
+        if(ext === "pdf"){
+          const btn = document.createElement("button");
+          btn.className = "btn btn-warning btn-icon";
+          btn.title = "Insertar (HTML)";
+          btn.innerHTML = '<i class="fa-solid fa-code"></i>';
+          btn.onclick = () => copyPdfEmbed(url);
+          actions.insertBefore(btn, actions.querySelector("[data-del]"));
+        }
+      } else if (isVideo(ext)) {
+        const video = document.createElement("video");
+        video.src = url; video.controls = true; video.className="rounded-3";
+        video.style.cssText="width:100%;aspect-ratio:16/11;object-fit:cover;";
+        sk.replaceWith(video);
+      } else if (isAudio(ext)) {
+        const audio = document.createElement("audio");
+        audio.src = url; audio.controls = true; audio.className="w-100";
+        sk.replaceWith(audio);
+      } else {
+        img.src = url;
+        img.onload = ()=> { sk.remove(); img.classList.remove("d-none"); };
+      }
+
+      node.querySelector("[data-copy]").onclick = async () => {
+        await navigator.clipboard.writeText(url);
+        notify({ icon:'success', title:'Enlace copiado' });
+      };
+      node.querySelector("[data-dl]").onclick = () => descargar(url);
+      node.querySelector("[data-share]").onclick = () => compartir(url, fileName);
+      node.querySelector("[data-del]").onclick = () => eliminar(fileName);
+
+      return node;
+    }
+
+    function renderList(files){
+      grid.innerHTML = "";
+      if(!files?.length){
+        grid.innerHTML = `<div class="text-center muted py-5">Sin resultados</div>`;
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      files.forEach(f => frag.appendChild(cardFor(f)));
+      grid.appendChild(frag);
+    }
+
+    // ====== API ======
+    async function listar(){
+      renderSkeleton();
+      try{
+        const r = await fetch(API + "/get_image");
+        const j = await r.json();
+        renderList(j.archivos || []);
+      }catch(e){
+        console.error(e);
+        notify({icon:'error', title:'Error listando'});
+      }
+    }
+
+    let searchTimer;
+    async function buscar(term){
+      if(!term) return listar();
+      renderSkeleton(4);
+      try{
+        const r = await fetch(API + "/search_image?search=" + encodeURIComponent(term));
+        const j = await r.json();
+        renderList(j.imagenes || []);
+      }catch(e){
+        console.error(e);
+        notify({icon:'error', title:'Error buscando'});
+      }
+    }
+
+    async function eliminar(name){
+      const ok = await Swal.fire({
+        title:'Eliminar archivo',
+        text:name,
+        icon:'warning', confirmButtonText:'Eliminar', showCancelButton:true,
+        confirmButtonColor:'#e11d48'
+      }).then(r=>r.isConfirmed);
+      if(!ok) return;
+      try{
+        const r = await fetch(API + "/delete_image?image_delete=" + encodeURIComponent(name), { method:'DELETE' });
+        const j = await r.json();
+        if(j.success){ notify({icon:'success', title:'Eliminado'}); listar(); }
+        else { notify({icon:'error', title:j.message || 'No se pudo eliminar'}); }
+      }catch(e){ console.error(e); notify({icon:'error', title:'Error eliminando'}); }
+    }
+
+    async function descargar(url){
+      const r = await fetch(url);
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = decodeURIComponent(url.split('/').pop());
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    }
+
+    function compartir(url, name){
+      if(navigator.share){
+        navigator.share({ title:'Archivo', text:name, url }).catch(()=>{});
+      }else{
+        navigator.clipboard.writeText(url);
+        notify({icon:'success', title:'Enlace copiado'});
+      }
+    }
+
+    // ====== Upload ======
+    function renderUploadItem(file){
+      const row = document.createElement('div');
+      row.className = "glass p-2 rounded-3 mt-2";
+      row.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+          <div class="flex-grow-1 text-truncate small">${file.name}</div>
+          <div class="small muted" data-perc>0%</div>
+        </div>
+        <div class="progress mt-2" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar" style="width:0%"></div>
+        </div>`;
+      uploadList.appendChild(row);
+      return {
+        set(p){ row.querySelector('.progress-bar').style.width = p+'%'; row.querySelector('[data-perc]').textContent = p+'%'; },
+        done(){ row.remove(); }
+      };
+    }
+
+    function uploadFiles(files){
+      [...files].forEach(file=>{
+        const ui = renderUploadItem(file);
+        const fd = new FormData();
+        fd.append('file', file); // tu backend espera "file"
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API + '/img');
+        xhr.upload.onprogress = (e)=>{
+          if(e.lengthComputable){
+            const p = Math.round((e.loaded/e.total)*100);
+            ui.set(p);
+          }
+        };
+        xhr.onload = ()=>{
+          ui.done();
+          try{
+            const j = JSON.parse(xhr.responseText);
+            if(j.success){ notify({icon:'success', title:'Subido'}); listar(); }
+            else { notify({icon:'error', title: j.message || 'Error subiendo'}); }
+          }catch{ notify({icon:'error', title:'Respuesta inválida'}); }
+        };
+        xhr.onerror = ()=>{ ui.done(); notify({icon:'error', title:'Error de red'}); };
+        xhr.send(fd);
+      });
+    }
+
+    // ====== Events ======
+    fileInput.addEventListener('change', e => {
+      if(e.target.files?.length) uploadFiles(e.target.files);
+      fileInput.value = '';
+    });
+
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+    drop.addEventListener('drop', e => {
+      e.preventDefault(); drop.classList.remove('dragover');
+      if(e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+    });
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(()=>buscar(searchInput.value.trim()), 350);
+    });
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = ''; listar();
+    });
+
+    // ====== init ======
+    listar();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

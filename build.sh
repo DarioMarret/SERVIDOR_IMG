@@ -1,6 +1,6 @@
 git pull
 git add .
-git commit -m "update"
+git commit -m "nuevos comabios confirmacion al eliminar un archivo"
 git push
 
 export DOCKER_IMAGE_VERSION="dev_$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)"
